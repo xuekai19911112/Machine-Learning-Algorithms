@@ -71,8 +71,10 @@ def trainNB0(trainMatrix,trainCategory):
     numTrainDocs = len(trainMatrix)							#计算训练的文档数目
     numWords = len(trainMatrix[0])							#计算每篇文档的词条数
     pAbusive = sum(trainCategory)/float(numTrainDocs)		#文档属于侮辱类的概率
-    p0Num = np.zeros(numWords); p1Num = np.zeros(numWords)	#创建numpy.zeros数组,
-    p0Denom = 0.0; p1Denom = 0.0                        	#分母初始化为0.0
+    p0Num = np.ones(numWords); p1Num = np.ones(numWords)    #创建numpy.ones数组,词条出现数初始化为1，拉普拉斯平滑
+    p0Denom = 2.0; p1Denom = 2.0
+    # p0Num = np.zeros(numWords); p1Num = np.zeros(numWords)	#创建numpy.zeros数组,
+    # p0Denom = 0.0; p1Denom = 0.0                        	#分母初始化为0.0
     for i in range(numTrainDocs):
         if trainCategory[i] == 1:							#统计属于侮辱类的条件概率所需的数据，即P(w0|1),P(w1|1),P(w2|1)···
             p1Num += trainMatrix[i]
@@ -80,8 +82,10 @@ def trainNB0(trainMatrix,trainCategory):
         else:												#统计属于非侮辱类的条件概率所需的数据，即P(w0|0),P(w1|0),P(w2|0)···
             p0Num += trainMatrix[i]
             p0Denom += sum(trainMatrix[i])
-    p1Vect = p1Num/p1Denom									#相除
-    p0Vect = p0Num/p0Denom
+    # p1Vect = p1Num/p1Denom									#相除
+    # p0Vect = p0Num/p0Denom
+    p1Vect = np.log(p1Num/p1Denom)                            #取对数，防止下溢出
+    p0Vect = np.log(p0Num/p0Denom)
     return p0Vect,p1Vect,pAbusive							#返回属于侮辱类的条件概率数组，属于非侮辱类的条件概率数组，文档属于侮辱类的概率
 
 """
@@ -97,8 +101,10 @@ Returns:
 	1 - 属于侮辱类
 """
 def classifyNB(vec2Classify, p0Vec, p1Vec, pClass1):
-    p1 = reduce(lambda x,y:x*y, vec2Classify * p1Vec) * pClass1    			#对应元素相乘
-    p0 = reduce(lambda x,y:x*y, vec2Classify * p0Vec) * (1.0 - pClass1)
+    # p1 = reduce(lambda x,y:x*y, vec2Classify * p1Vec) * pClass1    			#对应元素相乘
+    # p0 = reduce(lambda x,y:x*y, vec2Classify * p0Vec) * (1.0 - pClass1)
+    p1 = sum(vec2Classify * p1Vec) + np.log(pClass1)        #对应元素相乘。logA * B = logA + logB，所以这里加上log(pClass1)
+    p0 = sum(vec2Classify * p0Vec) + np.log(1.0 - pClass1)
     print('p0:',p0)
     print('p1:',p1)
     if p1 > p0:
